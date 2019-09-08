@@ -1,6 +1,5 @@
 module Vips
   class Image
-
     # @!method self.system(cmd_format, **opts)
     #   Run an external command.
     #   @param cmd_format [String] Command to run
@@ -230,12 +229,12 @@ module Vips
     # @!method project(**opts)
     #   Find image projections.
     #   @param opts [Hash] Set of options
-    #   @return [Array<] Sums of columns, Sums of rows
+    #   @return [Array<Vips::Image, Vips::Image>] Sums of columns, Sums of rows
 
     # @!method profile(**opts)
     #   Find image profiles.
     #   @param opts [Hash] Set of options
-    #   @return [Array<] First non-zero pixel in column, First non-zero pixel in row
+    #   @return [Array<Vips::Image, Vips::Image>] First non-zero pixel in column, First non-zero pixel in row
 
     # @!method measure(h, v, **opts)
     #   Measure a set of patches on a color chart.
@@ -260,7 +259,7 @@ module Vips
     #   @param opts [Hash] Set of options
     #   @option opts [Float] :threshold Object threshold
     #   @option opts [Array<Double>] :background Color for background pixels
-    #   @return [Array<] Left edge of image, Top edge of extract area, Width of extract area, Height of extract area
+    #   @return [Array<Integer, Integer, Integer, Integer>] Left edge of image, Top edge of extract area, Width of extract area, Height of extract area
 
     # @!method copy(**opts)
     #   Copy an image.
@@ -593,6 +592,7 @@ module Vips
     #   @option opts [Integer] :height Maximum image height in pixels
     #   @option opts [Vips::Align] :align Align on the low, centre or high edge
     #   @option opts [Integer] :dpi DPI to render at
+    #   @option opts [Boolean] :justify Justify lines
     #   @option opts [Integer] :spacing Line spacing
     #   @option opts [String] :fontfile Load this font file
     #   @option opts [Integer] :autofit_dpi Output DPI selected by autofit
@@ -862,13 +862,13 @@ module Vips
     #   Load csv from file.
     #   @param filename [String] Filename to load from
     #   @param opts [Hash] Set of options
-    #   @option opts [Boolean] :memory Force open via memory
-    #   @option opts [Vips::Access] :access Required access pattern for this file
     #   @option opts [Integer] :skip Skip this many lines at the start of the file
     #   @option opts [Integer] :lines Read this many lines from the file
-    #   @option opts [Boolean] :fail Fail on first error
     #   @option opts [String] :whitespace Set of whitespace characters
     #   @option opts [String] :separator Set of separator characters
+    #   @option opts [Boolean] :memory Force open via memory
+    #   @option opts [Vips::Access] :access Required access pattern for this file
+    #   @option opts [Boolean] :fail Fail on first error
     #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
     #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
 
@@ -889,10 +889,10 @@ module Vips
     #   @param height [Integer] Image height in pixels
     #   @param bands [Integer] Number of bands in image
     #   @param opts [Hash] Set of options
+    #   @option opts [guint64] :offset Offset in bytes from start of file
     #   @option opts [Boolean] :memory Force open via memory
     #   @option opts [Vips::Access] :access Required access pattern for this file
     #   @option opts [Boolean] :fail Fail on first error
-    #   @option opts [guint64] :offset Offset in bytes from start of file
     #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
     #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
 
@@ -940,14 +940,14 @@ module Vips
     #   Load pdf with libpoppler.
     #   @param filename [String] Filename to load from
     #   @param opts [Hash] Set of options
-    #   @option opts [Boolean] :memory Force open via memory
-    #   @option opts [Vips::Access] :access Required access pattern for this file
     #   @option opts [Integer] :page Load this page from the file
     #   @option opts [Integer] :n Load this many pages
-    #   @option opts [Boolean] :fail Fail on first error
     #   @option opts [Float] :dpi Render at this DPI
     #   @option opts [Float] :scale Scale output by this factor
     #   @option opts [Array<Double>] :background Background value
+    #   @option opts [Boolean] :memory Force open via memory
+    #   @option opts [Vips::Access] :access Required access pattern for this file
+    #   @option opts [Boolean] :fail Fail on first error
     #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
     #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
 
@@ -955,14 +955,14 @@ module Vips
     #   Load pdf with libpoppler.
     #   @param buffer [VipsBlob] Buffer to load from
     #   @param opts [Hash] Set of options
-    #   @option opts [Boolean] :memory Force open via memory
-    #   @option opts [Vips::Access] :access Required access pattern for this file
     #   @option opts [Integer] :page Load this page from the file
     #   @option opts [Integer] :n Load this many pages
-    #   @option opts [Boolean] :fail Fail on first error
     #   @option opts [Float] :dpi Render at this DPI
     #   @option opts [Float] :scale Scale output by this factor
     #   @option opts [Array<Double>] :background Background value
+    #   @option opts [Boolean] :memory Force open via memory
+    #   @option opts [Vips::Access] :access Required access pattern for this file
+    #   @option opts [Boolean] :fail Fail on first error
     #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
     #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
 
@@ -970,11 +970,11 @@ module Vips
     #   Load svg with rsvg.
     #   @param filename [String] Filename to load from
     #   @param opts [Hash] Set of options
+    #   @option opts [Float] :dpi Render at this DPI
+    #   @option opts [Float] :scale Scale output by this factor
     #   @option opts [Boolean] :memory Force open via memory
     #   @option opts [Vips::Access] :access Required access pattern for this file
-    #   @option opts [Float] :dpi Render at this DPI
     #   @option opts [Boolean] :fail Fail on first error
-    #   @option opts [Float] :scale Scale output by this factor
     #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
     #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
 
@@ -982,11 +982,11 @@ module Vips
     #   Load svg with rsvg.
     #   @param filename [String] Filename to load from
     #   @param opts [Hash] Set of options
+    #   @option opts [Float] :dpi Render at this DPI
+    #   @option opts [Float] :scale Scale output by this factor
     #   @option opts [Boolean] :memory Force open via memory
     #   @option opts [Vips::Access] :access Required access pattern for this file
-    #   @option opts [Float] :dpi Render at this DPI
     #   @option opts [Boolean] :fail Fail on first error
-    #   @option opts [Float] :scale Scale output by this factor
     #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
     #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
 
@@ -994,11 +994,11 @@ module Vips
     #   Load svg with rsvg.
     #   @param buffer [VipsBlob] Buffer to load from
     #   @param opts [Hash] Set of options
+    #   @option opts [Float] :dpi Render at this DPI
+    #   @option opts [Float] :scale Scale output by this factor
     #   @option opts [Boolean] :memory Force open via memory
     #   @option opts [Vips::Access] :access Required access pattern for this file
-    #   @option opts [Float] :dpi Render at this DPI
     #   @option opts [Boolean] :fail Fail on first error
-    #   @option opts [Float] :scale Scale output by this factor
     #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
     #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
 
@@ -1006,10 +1006,10 @@ module Vips
     #   Load gif with giflib.
     #   @param filename [String] Filename to load from
     #   @param opts [Hash] Set of options
+    #   @option opts [Integer] :page Load this page from the file
     #   @option opts [Integer] :n Load this many pages
     #   @option opts [Boolean] :memory Force open via memory
     #   @option opts [Vips::Access] :access Required access pattern for this file
-    #   @option opts [Integer] :page Load this page from the file
     #   @option opts [Boolean] :fail Fail on first error
     #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
     #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
@@ -1018,10 +1018,10 @@ module Vips
     #   Load gif with giflib.
     #   @param buffer [VipsBlob] Buffer to load from
     #   @param opts [Hash] Set of options
+    #   @option opts [Integer] :page Load this page from the file
     #   @option opts [Integer] :n Load this many pages
     #   @option opts [Boolean] :memory Force open via memory
     #   @option opts [Vips::Access] :access Required access pattern for this file
-    #   @option opts [Integer] :page Load this page from the file
     #   @option opts [Boolean] :fail Fail on first error
     #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
     #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
@@ -1060,11 +1060,11 @@ module Vips
     #   Load jpeg from file.
     #   @param filename [String] Filename to load from
     #   @param opts [Hash] Set of options
+    #   @option opts [Integer] :shrink Shrink factor on load
+    #   @option opts [Boolean] :autorotate Rotate image using exif orientation
     #   @option opts [Boolean] :memory Force open via memory
     #   @option opts [Vips::Access] :access Required access pattern for this file
-    #   @option opts [Integer] :shrink Shrink factor on load
     #   @option opts [Boolean] :fail Fail on first error
-    #   @option opts [Boolean] :autorotate Rotate image using exif orientation
     #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
     #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
 
@@ -1072,11 +1072,11 @@ module Vips
     #   Load jpeg from buffer.
     #   @param buffer [VipsBlob] Buffer to load from
     #   @param opts [Hash] Set of options
+    #   @option opts [Integer] :shrink Shrink factor on load
+    #   @option opts [Boolean] :autorotate Rotate image using exif orientation
     #   @option opts [Boolean] :memory Force open via memory
     #   @option opts [Vips::Access] :access Required access pattern for this file
-    #   @option opts [Integer] :shrink Shrink factor on load
     #   @option opts [Boolean] :fail Fail on first error
-    #   @option opts [Boolean] :autorotate Rotate image using exif orientation
     #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
     #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
 
@@ -1084,9 +1084,11 @@ module Vips
     #   Load webp from file.
     #   @param filename [String] Filename to load from
     #   @param opts [Hash] Set of options
+    #   @option opts [Integer] :page Load this page from the file
+    #   @option opts [Integer] :n Load this many pages
+    #   @option opts [Float] :scale Scale factor on load
     #   @option opts [Boolean] :memory Force open via memory
     #   @option opts [Vips::Access] :access Required access pattern for this file
-    #   @option opts [Integer] :shrink Shrink factor on load
     #   @option opts [Boolean] :fail Fail on first error
     #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
     #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
@@ -1095,9 +1097,11 @@ module Vips
     #   Load webp from buffer.
     #   @param buffer [VipsBlob] Buffer to load from
     #   @param opts [Hash] Set of options
+    #   @option opts [Integer] :page Load this page from the file
+    #   @option opts [Integer] :n Load this many pages
+    #   @option opts [Float] :scale Scale factor on load
     #   @option opts [Boolean] :memory Force open via memory
     #   @option opts [Vips::Access] :access Required access pattern for this file
-    #   @option opts [Integer] :shrink Shrink factor on load
     #   @option opts [Boolean] :fail Fail on first error
     #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
     #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
@@ -1106,12 +1110,12 @@ module Vips
     #   Load tiff from file.
     #   @param filename [String] Filename to load from
     #   @param opts [Hash] Set of options
-    #   @option opts [Boolean] :memory Force open via memory
-    #   @option opts [Vips::Access] :access Required access pattern for this file
     #   @option opts [Integer] :page Load this page from the image
     #   @option opts [Integer] :n Load this many pages
-    #   @option opts [Boolean] :fail Fail on first error
     #   @option opts [Boolean] :autorotate Rotate image using orientation tag
+    #   @option opts [Boolean] :memory Force open via memory
+    #   @option opts [Vips::Access] :access Required access pattern for this file
+    #   @option opts [Boolean] :fail Fail on first error
     #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
     #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
 
@@ -1119,12 +1123,12 @@ module Vips
     #   Load tiff from buffer.
     #   @param buffer [VipsBlob] Buffer to load from
     #   @param opts [Hash] Set of options
-    #   @option opts [Boolean] :memory Force open via memory
-    #   @option opts [Vips::Access] :access Required access pattern for this file
     #   @option opts [Integer] :page Load this page from the image
     #   @option opts [Integer] :n Load this many pages
-    #   @option opts [Boolean] :fail Fail on first error
     #   @option opts [Boolean] :autorotate Rotate image using orientation tag
+    #   @option opts [Boolean] :memory Force open via memory
+    #   @option opts [Vips::Access] :access Required access pattern for this file
+    #   @option opts [Boolean] :fail Fail on first error
     #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
     #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
 
@@ -1132,12 +1136,13 @@ module Vips
     #   Load file with openslide.
     #   @param filename [String] Filename to load from
     #   @param opts [Hash] Set of options
-    #   @option opts [Boolean] :memory Force open via memory
-    #   @option opts [Vips::Access] :access Required access pattern for this file
+    #   @option opts [Boolean] :attach_associated Attach all asssociated images
     #   @option opts [Integer] :level Load this level from the file
     #   @option opts [Boolean] :autocrop Crop to image bounds
-    #   @option opts [Boolean] :fail Fail on first error
     #   @option opts [String] :associated Load this associated image
+    #   @option opts [Boolean] :memory Force open via memory
+    #   @option opts [Vips::Access] :access Required access pattern for this file
+    #   @option opts [Boolean] :fail Fail on first error
     #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
     #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
 
@@ -1197,6 +1202,34 @@ module Vips
     #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
     #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
 
+    # @!method self.heifload(filename, **opts)
+    #   Load a heif image.
+    #   @param filename [String] Filename to load from
+    #   @param opts [Hash] Set of options
+    #   @option opts [Integer] :page Load this page from the file
+    #   @option opts [Integer] :n Load this many pages
+    #   @option opts [Boolean] :thumbnail Fetch thumbnail image
+    #   @option opts [Boolean] :autorotate Rotate image using exif orientation
+    #   @option opts [Boolean] :memory Force open via memory
+    #   @option opts [Vips::Access] :access Required access pattern for this file
+    #   @option opts [Boolean] :fail Fail on first error
+    #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
+    #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
+
+    # @!method self.heifload_buffer(buffer, **opts)
+    #   Load a heif image.
+    #   @param buffer [VipsBlob] Buffer to load from
+    #   @param opts [Hash] Set of options
+    #   @option opts [Integer] :page Load this page from the file
+    #   @option opts [Integer] :n Load this many pages
+    #   @option opts [Boolean] :thumbnail Fetch thumbnail image
+    #   @option opts [Boolean] :autorotate Rotate image using exif orientation
+    #   @option opts [Boolean] :memory Force open via memory
+    #   @option opts [Vips::Access] :access Required access pattern for this file
+    #   @option opts [Boolean] :fail Fail on first error
+    #   @option opts [Vips::ForeignFlags] :flags Output Flags for this file
+    #   @return [Vips::Image, Hash<Symbol => Object>] Output image, Hash of optional output items
+
     # @!method csvsave(filename, **opts)
     #   Save image to csv file.
     #   @param filename [String] Filename to save to
@@ -1205,7 +1238,7 @@ module Vips
     #   @option opts [String] :separator Separator characters
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
-    #   @return [nil]
+    #   @return [nil] 
 
     # @!method matrixsave(filename, **opts)
     #   Save image to matrix file.
@@ -1214,7 +1247,7 @@ module Vips
     #   @option opts [Integer] :page_height Set page height for multipage save
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
-    #   @return [nil]
+    #   @return [nil] 
 
     # @!method matrixprint(**opts)
     #   Print matrix.
@@ -1222,7 +1255,7 @@ module Vips
     #   @option opts [Integer] :page_height Set page height for multipage save
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
-    #   @return [nil]
+    #   @return [nil] 
 
     # @!method rawsave(filename, **opts)
     #   Save image to raw file.
@@ -1231,7 +1264,7 @@ module Vips
     #   @option opts [Integer] :page_height Set page height for multipage save
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
-    #   @return [nil]
+    #   @return [nil] 
 
     # @!method rawsave_fd(fd, **opts)
     #   Write raw image to file descriptor.
@@ -1240,7 +1273,7 @@ module Vips
     #   @option opts [Integer] :page_height Set page height for multipage save
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
-    #   @return [nil]
+    #   @return [nil] 
 
     # @!method vipssave(filename, **opts)
     #   Save image to vips file.
@@ -1249,7 +1282,7 @@ module Vips
     #   @option opts [Integer] :page_height Set page height for multipage save
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
-    #   @return [nil]
+    #   @return [nil] 
 
     # @!method ppmsave(filename, **opts)
     #   Save image to ppm file.
@@ -1260,7 +1293,7 @@ module Vips
     #   @option opts [Boolean] :squash save as one bit
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
-    #   @return [nil]
+    #   @return [nil] 
 
     # @!method radsave(filename, **opts)
     #   Save image to radiance file.
@@ -1269,7 +1302,7 @@ module Vips
     #   @option opts [Integer] :page_height Set page height for multipage save
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
-    #   @return [nil]
+    #   @return [nil] 
 
     # @!method radsave_buffer(**opts)
     #   Save image to radiance buffer.
@@ -1296,9 +1329,10 @@ module Vips
     #   @option opts [Boolean] :properties Write a properties file to the output directory
     #   @option opts [Integer] :compression ZIP deflate compression level
     #   @option opts [Vips::RegionShrink] :region_shrink Method to shrink regions
+    #   @option opts [Integer] :skip_blanks Skip tiles which are nearly equal to the background
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
-    #   @return [nil]
+    #   @return [nil] 
 
     # @!method dzsave_buffer(**opts)
     #   Save image to dz buffer.
@@ -1316,6 +1350,7 @@ module Vips
     #   @option opts [Boolean] :properties Write a properties file to the output directory
     #   @option opts [Integer] :compression ZIP deflate compression level
     #   @option opts [Vips::RegionShrink] :region_shrink Method to shrink regions
+    #   @option opts [Integer] :skip_blanks Skip tiles which are nearly equal to the background
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
     #   @return [VipsBlob] Buffer to save to
@@ -1335,7 +1370,7 @@ module Vips
     #   @option opts [Float] :dither Amount of dithering
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
-    #   @return [nil]
+    #   @return [nil] 
 
     # @!method pngsave_buffer(**opts)
     #   Save image to png buffer.
@@ -1369,7 +1404,7 @@ module Vips
     #   @option opts [Integer] :quant_table Use predefined quantization table with given index
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
-    #   @return [nil]
+    #   @return [nil] 
 
     # @!method jpegsave_buffer(**opts)
     #   Save image to jpeg buffer.
@@ -1403,7 +1438,7 @@ module Vips
     #   @option opts [Integer] :quant_table Use predefined quantization table with given index
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
-    #   @return [nil]
+    #   @return [nil] 
 
     # @!method webpsave(filename, **opts)
     #   Save image to webp file.
@@ -1416,9 +1451,13 @@ module Vips
     #   @option opts [Boolean] :smart_subsample Enable high quality chroma subsampling
     #   @option opts [Boolean] :near_lossless Enable preprocessing in lossless mode (uses Q)
     #   @option opts [Integer] :alpha_q Change alpha plane fidelity for lossy compression
+    #   @option opts [Boolean] :min_size Optimise for minium size
+    #   @option opts [Integer] :kmin Minimum number of frames between key frames
+    #   @option opts [Integer] :kmax Maximum number of frames between key frames
+    #   @option opts [Integer] :reduction_effort Level of CPU effort to reduce file size
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
-    #   @return [nil]
+    #   @return [nil] 
 
     # @!method webpsave_buffer(**opts)
     #   Save image to webp buffer.
@@ -1430,6 +1469,10 @@ module Vips
     #   @option opts [Boolean] :smart_subsample Enable high quality chroma subsampling
     #   @option opts [Boolean] :near_lossless Enable preprocessing in lossless mode (uses Q)
     #   @option opts [Integer] :alpha_q Change alpha plane fidelity for lossy compression
+    #   @option opts [Boolean] :min_size Optimise for minium size
+    #   @option opts [Integer] :kmin Minimum number of frames between key frames
+    #   @option opts [Integer] :kmax Maximum number of frames between key frames
+    #   @option opts [Integer] :reduction_effort Level of CPU effort to reduce file size
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
     #   @return [VipsBlob] Buffer to save to
@@ -1457,7 +1500,7 @@ module Vips
     #   @option opts [Vips::RegionShrink] :region_shrink Method to shrink regions
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
-    #   @return [nil]
+    #   @return [nil] 
 
     # @!method tiffsave_buffer(**opts)
     #   Save image to tiff buffer.
@@ -1492,7 +1535,7 @@ module Vips
     #   @option opts [Integer] :page_height Set page height for multipage save
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
-    #   @return [nil]
+    #   @return [nil] 
 
     # @!method magicksave_buffer(**opts)
     #   Save image to magick buffer.
@@ -1511,7 +1554,7 @@ module Vips
     #   @option opts [Integer] :page_height Set page height for multipage save
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
-    #   @return [nil]
+    #   @return [nil] 
 
     # @!method niftisave(filename, **opts)
     #   Save image to nifti file.
@@ -1520,7 +1563,39 @@ module Vips
     #   @option opts [Integer] :page_height Set page height for multipage save
     #   @option opts [Boolean] :strip Strip all metadata from image
     #   @option opts [Array<Double>] :background Background value
-    #   @return [nil]
+    #   @return [nil] 
+
+    # @!method heifsave(filename, **opts)
+    #   Save image in heif format.
+    #   @param filename [String] Filename to load from
+    #   @param opts [Hash] Set of options
+    #   @option opts [Integer] :page_height Set page height for multipage save
+    #   @option opts [Integer] :Q Q factor
+    #   @option opts [Boolean] :lossless Enable lossless compression
+    #   @option opts [Boolean] :strip Strip all metadata from image
+    #   @option opts [Array<Double>] :background Background value
+    #   @return [nil] 
+
+    # @!method heifsave(filename, **opts)
+    #   Save image in heif format.
+    #   @param filename [String] Filename to load from
+    #   @param opts [Hash] Set of options
+    #   @option opts [Integer] :page_height Set page height for multipage save
+    #   @option opts [Integer] :Q Q factor
+    #   @option opts [Boolean] :lossless Enable lossless compression
+    #   @option opts [Boolean] :strip Strip all metadata from image
+    #   @option opts [Array<Double>] :background Background value
+    #   @return [nil] 
+
+    # @!method heifsave_buffer(**opts)
+    #   Save image in heif format.
+    #   @param opts [Hash] Set of options
+    #   @option opts [Integer] :page_height Set page height for multipage save
+    #   @option opts [Integer] :Q Q factor
+    #   @option opts [Boolean] :lossless Enable lossless compression
+    #   @option opts [Boolean] :strip Strip all metadata from image
+    #   @option opts [Array<Double>] :background Background value
+    #   @return [VipsBlob] Buffer to save to
 
     # @!method self.thumbnail(filename, width, **opts)
     #   Generate thumbnail from file.
@@ -1529,7 +1604,7 @@ module Vips
     #   @param opts [Hash] Set of options
     #   @option opts [Integer] :height Size to this height
     #   @option opts [Vips::Size] :size Only upsize, only downsize, or both
-    #   @option opts [Boolean] :auto_rotate Use orientation tags to rotate image upright
+    #   @option opts [Boolean] :no_rotate Don't use orientation tags to rotate image upright
     #   @option opts [Vips::Interesting] :crop Reduce to fill target rectangle, then crop
     #   @option opts [Boolean] :linear Reduce in linear light
     #   @option opts [String] :import_profile Fallback import profile
@@ -1542,9 +1617,10 @@ module Vips
     #   @param buffer [VipsBlob] Buffer to load from
     #   @param width [Integer] Size to this width
     #   @param opts [Hash] Set of options
+    #   @option opts [String] :option_string Options that are passed on to the underlying loader
     #   @option opts [Integer] :height Size to this height
     #   @option opts [Vips::Size] :size Only upsize, only downsize, or both
-    #   @option opts [Boolean] :auto_rotate Use orientation tags to rotate image upright
+    #   @option opts [Boolean] :no_rotate Don't use orientation tags to rotate image upright
     #   @option opts [Vips::Interesting] :crop Reduce to fill target rectangle, then crop
     #   @option opts [Boolean] :linear Reduce in linear light
     #   @option opts [String] :import_profile Fallback import profile
@@ -1558,7 +1634,7 @@ module Vips
     #   @param opts [Hash] Set of options
     #   @option opts [Integer] :height Size to this height
     #   @option opts [Vips::Size] :size Only upsize, only downsize, or both
-    #   @option opts [Boolean] :auto_rotate Use orientation tags to rotate image upright
+    #   @option opts [Boolean] :no_rotate Don't use orientation tags to rotate image upright
     #   @option opts [Vips::Interesting] :crop Reduce to fill target rectangle, then crop
     #   @option opts [Boolean] :linear Reduce in linear light
     #   @option opts [String] :import_profile Fallback import profile
@@ -1567,7 +1643,7 @@ module Vips
     #   @return [Vips::Image] Output image
 
     # @!method mapim(index, **opts)
-    #   Resample with an mapim image.
+    #   Resample with a map image.
     #   @param index [Vips::Image] Index pixels with this
     #   @param opts [Hash] Set of options
     #   @option opts [Vips::Interpolate] :interpolate Interpolate pixels with this
@@ -1848,6 +1924,22 @@ module Vips
     #   @param opts [Hash] Set of options
     #   @option opts [Integer] :depth Output device space depth in bits
     #   @return [Vips::Image] Output image
+
+    # @!method CMYK2XYZ(**opts)
+    #   Transform cmyk to xyz.
+    #   @param opts [Hash] Set of options
+    #   @return [Vips::Image] Output image
+
+    # @!method XYZ2CMYK(**opts)
+    #   Transform xyz to cmyk.
+    #   @param opts [Hash] Set of options
+    #   @return [Vips::Image] Output image
+
+    # @!method self.profile_load(name, **opts)
+    #   Load named icc profile.
+    #   @param name [String] Profile name
+    #   @param opts [Hash] Set of options
+    #   @return [VipsBlob] Loaded profile
 
     # @!method maplut(lut, **opts)
     #   Map an image though a lut.
@@ -2227,6 +2319,5 @@ module Vips
     #   @option opts [Float] :gamma Image gamma
     #   @option opts [Boolean] :int_output Integer output
     #   @return [Vips::Image] Output image
-
   end
 end

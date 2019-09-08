@@ -2,12 +2,19 @@
 
 ## master
 
+## Version 2.0.15 (2019-6-12)
+
+* better error messages from `write_to_memory` [linkyndy]
+* fix doc generation typo for array return [jcupitt]
+* update tests for libvips 8.8 [jcupitt]
+
 ## Version 2.0.14 (2018-10-3)
 
 * update links for new home [jcupitt]
 * various doc fixes [janko-m]
-* update docs for 8.7 [jcupitt]
 * add `Vips::get_suffixes` [jcupitt]
+* prefer options splat [ioquatix]
+* update docs for 8.8 [jcupitt]
 
 ## Version 2.0.13 (2018-8-6)
 

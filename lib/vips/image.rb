@@ -81,12 +81,10 @@ module Vips
 
     class Struct < Vips::Object::Struct
       include ImageLayout
-
     end
 
     class ManagedStruct < Vips::Object::ManagedStruct
       include ImageLayout
-
     end
 
     class GenericPtr < FFI::Struct
@@ -96,7 +94,7 @@ module Vips
     # handy for overloads ... want to be able to apply a function to an
     # array or to a scalar
     def self.smap x, &block
-      x.is_a?(Array) ? x.map {|y| smap(y, &block)} : block.(x)
+      x.is_a?(Array) ? x.map { |y| smap(y, &block) } : block.(x)
     end
 
     def self.complex? format
@@ -178,15 +176,15 @@ module Vips
     public
 
     def inspect
-      "#<Image #{width}x#{height} #{format}, #{bands} bands, " +
-          "#{interpretation}>"
+      "#<Image #{width}x#{height} #{format}, #{bands} bands, #{interpretation}>"
     end
 
     def respond_to? name, include_all = false
       # To support keyword args, we need to tell Ruby that final image
       # arguments cannot be hashes of keywords.
       #
-      # https://makandracards.com/makandra/36013-heads-up-ruby-implicitly-converts-a-hash-to-keyword-arguments
+      # https://makandracards.com/makandra/
+      #   36013-heads-up-ruby-implicitly-converts-a-hash-to-keyword-arguments
       return false if name == :to_hash
 
       # respond to all vips operations by nickname
@@ -347,19 +345,20 @@ module Vips
       if array[0].is_a? Array
         height = array.length
         width = array[0].length
-        unless array.all? {|x| x.is_a? Array}
+        unless array.all? { |x| x.is_a? Array }
           raise Vips::Error, "Not a 2D array."
         end
-        unless array.all? {|x| x.length == width}
+        unless array.all? { |x| x.length == width }
           raise Vips::Error, "Array not rectangular."
         end
+
         array = array.flatten
       else
         height = 1
         width = array.length
       end
 
-      unless array.all? {|x| x.is_a? Numeric}
+      unless array.all? { |x| x.is_a? Numeric }
         raise Vips::Error, "Not all array elements are Numeric."
       end
 
@@ -385,8 +384,8 @@ module Vips
     def new_from_image value
       pixel = (Vips::Image.black(1, 1) + value).cast(format)
       image = pixel.embed 0, 0, width, height, extend: :copy
-      image.copy interpretation: interpretation,
-          xres: xres, yres: yres, xoffset: xoffset, yoffset: yoffset
+      image.copy interpretation: interpretation, xres: xres, yres: yres,
+        xoffset: xoffset, yoffset: yoffset
     end
 
     # Write this image to a file. Save options may be encoded in the
@@ -457,10 +456,8 @@ module Vips
     # @macro vips.saveopts
     # @return [String] the image saved in the specified format
     def write_to_buffer format_string, **opts
-      filename =
-          Vips::p2str(Vips::vips_filename_get_filename format_string)
-      option_string =
-          Vips::p2str(Vips::vips_filename_get_options format_string)
+      filename = Vips::p2str(Vips::vips_filename_get_filename format_string)
+      option_string = Vips::p2str(Vips::vips_filename_get_options format_string)
       saver = Vips::vips_foreign_find_save_buffer filename
       if saver == nil
         raise Vips::Error, "No known saver for '#{filename}'."
@@ -480,6 +477,7 @@ module Vips
     def write_to_memory
       len = Vips::SizeStruct.new
       ptr = Vips::vips_image_write_to_memory self, len
+      raise Vips::Error if ptr == nil
 
       # wrap up as an autopointer
       ptr = FFI::AutoPointer.new(ptr, GLib::G_FREE)
@@ -772,7 +770,7 @@ module Vips
     # @return [Image] result of subtraction
     def - other
       other.is_a?(Vips::Image) ?
-          subtract(other) : linear(1, Image::smap(other) {|x| x * -1})
+          subtract(other) : linear(1, Image::smap(other) { |x| x * -1 })
     end
 
     # Multiply an image, constant or array.
@@ -790,7 +788,7 @@ module Vips
     # @return [Image] result of division
     def / other
       other.is_a?(Vips::Image) ?
-          divide(other) : linear(Image::smap(other) {|x| 1.0 / x}, 0)
+          divide(other) : linear(Image::smap(other) { |x| 1.0 / x }, 0)
     end
 
     # Remainder after integer division with an image, constant or array.
@@ -961,16 +959,16 @@ module Vips
 
       # make the template for unpack
       template = {
-          :char => 'c',
-          :uchar => 'C',
-          :short => 's_',
-          :ushort => 'S_',
-          :int => 'i_',
-          :uint => 'I_',
-          :float => 'f',
-          :double => 'd',
-          :complex => 'f',
-          :dpcomplex => 'd'
+        char: 'c',
+        uchar: 'C',
+        short: 's_',
+        ushort: 'S_',
+        int: 'i_',
+        uint: 'I_',
+        float: 'f',
+        double: 'd',
+        complex: 'f',
+        dpcomplex: 'd'
       }[format] + '*'
 
       # and unpack into something like [1, 2, 3, 4 ..]
@@ -1031,7 +1029,7 @@ module Vips
     #
     # @return [Array<Image>] Array of n one-band images
     def bandsplit
-      (0...bands).map {|i| extract_band i}
+      (0...bands).map { |i| extract_band i }
     end
 
     # Join a set of images bandwise.
@@ -1044,7 +1042,7 @@ module Vips
       end
 
       # if other is just Numeric, we can use bandjoin_const
-      not_all_real = !other.all?{|x| x.is_a? Numeric}
+      not_all_real = !other.all? { |x| x.is_a? Numeric }
 
       if not_all_real
         Vips::Image.bandjoin([self] + other)
@@ -1130,7 +1128,7 @@ module Vips
     # @see xyz
     # @return [Image] image converted to polar coordinates
     def polar
-      Image::run_cmplx(self) {|x| x.complex :polar}
+      Image::run_cmplx(self) { |x| x.complex :polar }
     end
 
     # Return an image with polar pixels converted to rectangular.
@@ -1143,7 +1141,7 @@ module Vips
     # @see xyz
     # @return [Image] image converted to rectangular coordinates
     def rect
-      Image::run_cmplx(self) {|x| x.complex :rect}
+      Image::run_cmplx(self) { |x| x.complex :rect }
     end
 
     # Return the complex conjugate of an image.
@@ -1155,7 +1153,7 @@ module Vips
     #
     # @return [Image] complex conjugate
     def conj
-      Image::run_cmplx(self) {|x| x.complex :conj}
+      Image::run_cmplx(self) { |x| x.complex :conj }
     end
 
     # Calculate the cross phase of two images.
@@ -1305,7 +1303,7 @@ module Vips
     # @option opts [Boolean] :blend (false) Blend smoothly between th and el
     # @return [Image] merged image
     def ifthenelse(th, el, **opts)
-      match_image = [th, el, self].find {|x| x.is_a? Vips::Image}
+      match_image = [th, el, self].find { |x| x.is_a? Vips::Image }
 
       unless th.is_a? Vips::Image
         th = Operation.imageize match_image, th
@@ -1325,12 +1323,10 @@ module Vips
     def scaleimage **opts
       Vips::Image.scale self, opts
     end
-
   end
 end
 
 module Vips
-
   # This method generates yard comments for all the dynamically bound
   # vips operations.
   #
@@ -1348,23 +1344,24 @@ module Vips
 
     # map gobject's type names to Ruby
     map_go_to_ruby = {
-        "gboolean" => "Boolean",
-        "gint" => "Integer",
-        "gdouble" => "Float",
-        "gfloat" => "Float",
-        "gchararray" => "String",
-        "VipsImage" => "Vips::Image",
-        "VipsInterpolate" => "Vips::Interpolate",
-        "VipsArrayDouble" => "Array<Double>",
-        "VipsArrayInt" => "Array<Integer>",
-        "VipsArrayImage" => "Array<Image>",
-        "VipsArrayString" => "Array<String>",
+      "gboolean" => "Boolean",
+      "gint" => "Integer",
+      "gdouble" => "Float",
+      "gfloat" => "Float",
+      "gchararray" => "String",
+      "VipsImage" => "Vips::Image",
+      "VipsInterpolate" => "Vips::Interpolate",
+      "VipsArrayDouble" => "Array<Double>",
+      "VipsArrayInt" => "Array<Integer>",
+      "VipsArrayImage" => "Array<Image>",
+      "VipsArrayString" => "Array<String>",
     }
 
     generate_operation = lambda do |gtype, nickname, op|
       op_flags = op.get_flags
       return if (op_flags & OPERATION_DEPRECATED) != 0
       return if no_generate.include? nickname
+
       description = Vips::vips_object_get_description op
 
       # find and classify all the arguments the operator can take
@@ -1373,7 +1370,7 @@ module Vips
       required_output = []
       optional_output = []
       member_x = nil
-      op.argument_map do |pspec, argument_class, argument_instance|
+      op.argument_map do |pspec, argument_class, _argument_instance|
         arg_flags = argument_class[:flags]
         next if (arg_flags & ARGUMENT_CONSTRUCT) == 0
         next if (arg_flags & ARGUMENT_DEPRECATED) != 0
@@ -1388,15 +1385,17 @@ module Vips
           type_name = map_go_to_ruby[type_name]
         end
         if fundamental == GObject::GFLAGS_TYPE ||
-            fundamental == GObject::GENUM_TYPE
+           fundamental == GObject::GENUM_TYPE
           type_name = "Vips::" + type_name[/Vips(.*)/, 1]
         end
         blurb = GObject::g_param_spec_get_blurb pspec
-        value = {:name => name,
-                 :flags => arg_flags,
-                 :gtype => gtype,
-                 :type_name => type_name,
-                 :blurb => blurb}
+        value = {
+          name: name,
+          flags: arg_flags,
+          gtype: gtype,
+          type_name: type_name,
+          blurb: blurb
+        }
 
         if (arg_flags & ARGUMENT_INPUT) != 0
           if (arg_flags & ARGUMENT_REQUIRED) != 0
@@ -1414,35 +1413,33 @@ module Vips
 
         # MODIFY INPUT args count as OUTPUT as well
         if (arg_flags & ARGUMENT_OUTPUT) != 0 ||
-            ((arg_flags & ARGUMENT_INPUT) != 0 &&
-             (arg_flags & ARGUMENT_MODIFY) != 0)
+           ((arg_flags & ARGUMENT_INPUT) != 0 &&
+            (arg_flags & ARGUMENT_MODIFY) != 0)
           if (arg_flags & ARGUMENT_REQUIRED) != 0
             required_output << value
           else
             optional_output << value
           end
         end
-
       end
 
       print "# @!method "
       print "self." unless member_x
       print "#{nickname}("
-      print required_input.map{|x| x[:name]}.join(", ")
+      print required_input.map { |x| x[:name] }.join(", ")
       print ", " if required_input.length > 0
       puts "**opts)"
 
       puts "#   #{description.capitalize}."
 
       required_input.each do |arg|
-        puts "#   @param #{arg[:name]} [#{arg[:type_name]}] " +
-            "#{arg[:blurb]}"
+        puts "#   @param #{arg[:name]} [#{arg[:type_name]}] #{arg[:blurb]}"
       end
 
       puts "#   @param opts [Hash] Set of options"
       optional_input.each do |arg|
         puts "#   @option opts [#{arg[:type_name]}] :#{arg[:name]} " +
-            "#{arg[:blurb]}"
+             "#{arg[:blurb]}"
       end
       optional_output.each do |arg|
         print "#   @option opts [#{arg[:type_name]}] :#{arg[:name]}"
@@ -1454,16 +1451,16 @@ module Vips
         print "nil"
       elsif required_output.length == 1
         print required_output.first[:type_name]
-      elsif
-          print "Array<"
-        print required_output.map{|x| x[:type_name]}.join(", ")
+      else
+        print "Array<"
+        print required_output.map { |x| x[:type_name] }.join(", ")
         print ">"
       end
       if optional_output.length > 0
         print ", Hash<Symbol => Object>"
       end
       print "] "
-      print required_output.map{|x| x[:blurb]}.join(", ")
+      print required_output.map { |x| x[:blurb] }.join(", ")
       if optional_output.length > 0
         print ", " if required_output.length > 0
         print "Hash of optional output items"
@@ -1473,14 +1470,15 @@ module Vips
       puts ""
     end
 
-    generate_class = lambda do |gtype, a|
+    generate_class = lambda do |gtype, _|
       nickname = Vips::nickname_find gtype
 
       if nickname
         begin
           # can fail for abstract types
           op = Vips::Operation.new nickname
-        rescue
+        rescue Vips::Error
+          nil
         end
 
         generate_operation.(gtype, nickname, op) if op
@@ -1498,5 +1496,4 @@ module Vips
     puts "  end"
     puts "end"
   end
-
 end
