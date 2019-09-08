@@ -27,6 +27,7 @@ addons:
       # A simple way to install all dependencies.
       - vips
       - glib
+    update: true
 
 cache:
   bundler: true
