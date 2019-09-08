@@ -24,9 +24,9 @@ addons:
       - libwebp-dev
   homebrew:
     packages:
-      # A simple way to install all dependencies.
-      - vips
       - glib
+      - libffi
+      - libexif
     update: true
 
 cache:
@@ -40,6 +40,7 @@ matrix:
     - rvm: 2.6
     - rvm: 2.6
       os: osx
+      env: PKG_CONFIG_PATH="/usr/local/opt/libffi/lib/pkgconfig"
     - rvm: truffleruby
     - rvm: jruby-head
     - rvm: ruby-head
