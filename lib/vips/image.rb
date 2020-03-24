@@ -53,6 +53,8 @@ module Vips
 
   attach_function :nickname_find, :vips_nickname_find, [:GType], :string
 
+  attach_function :vips_image_invalidate_all, [:pointer], :void
+
   # turn a raw pointer that must be freed into a self-freeing Ruby string
   def self.p2str(pointer)
     pointer = FFI::AutoPointer.new(pointer, GLib::G_FREE)
@@ -66,6 +68,10 @@ module Vips
 
   class Image < Vips::Object
     alias_method :parent_get_typeof, :get_typeof
+
+    def close
+      Vips.vips_image_invalidate_all(self)
+    end
 
     private
 
