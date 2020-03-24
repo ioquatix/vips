@@ -1033,7 +1033,7 @@ module Vips
     # @option opts [Vips::Interpretation] :compositing_space Composite images in this colour space
     # @option opts [Boolean] :premultiplied Images have premultiplied alpha
     # @return [Image] blended image
-    def composite overlay, mode, **opts
+    def composite overlay, mode, **options
       unless overlay.is_a? Array
         overlay = [overlay]
       end
@@ -1045,7 +1045,7 @@ module Vips
         GObject::GValue.from_nick Vips::BLEND_MODE_TYPE, x
       end
 
-      Vips::Image.composite([self] + overlay, mode, opts)
+      Vips::Image.composite([self] + overlay, mode, **options)
     end
 
     # Return the coordinates of the image maximum.
@@ -1294,8 +1294,8 @@ module Vips
     #
     # @param opts [Hash] Set of options
     # @return [Vips::Image] Output image
-    def scaleimage **opts
-      Vips::Image.scale self, opts
+    def scaleimage **options
+      Vips::Image.scale self, **options
     end
   end
 end
