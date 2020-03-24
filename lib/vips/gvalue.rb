@@ -13,6 +13,8 @@ module GObject
   # gvalue.init GObject::GDOUBLE_TYPE
   # gvalue.set 3.1415
   # value = gvalue.get
+  # # optional -- drop any ref the gvalue had
+  # gvalue.unset
   # ```
   #
   # Lifetime is managed automatically. It doesn't know about all GType values,
@@ -27,7 +29,9 @@ module GObject
       value = value.to_s if value.is_a? Symbol
 
       if value.is_a? String
-        value = Vips::vips_enum_from_nick "ruby-vips", gtype, value
+        # libvips expects "-" as a separator in enum names, but "_" is more
+        # convenient for ruby, eg. :b_w
+        value = Vips::vips_enum_from_nick "ruby-vips", gtype, value.tr("_", "-")
         if value == -1
           raise Vips::Error
         end
@@ -240,6 +244,14 @@ module GObject
       # }
 
       return result
+    end
+
+    # Clear the thing held by a GValue. 
+    #
+    # This happens automatically when a GValue is GCed, but this method can be 
+    # handy if you need to drop a reference explicitly for some reason.
+    def unset 
+      ::GObject::g_value_unset self
     end
   end
 

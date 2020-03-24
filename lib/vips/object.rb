@@ -41,6 +41,97 @@ module Vips
 
   private
 
+  class Progress < FFI::Struct
+    layout :im, :pointer,
+      :run, :int,
+      :eta, :int,
+      :tpels, :int64_t, 
+      :npels, :int64_t, 
+      :percent, :int, 
+      :start, :pointer 
+  end
+
+  # Our signal marshalers. 
+  #
+  # These are functions which take the handler as a param and return a 
+  # closure with the right FFI signature for g_signal_connect for this
+  # specific signal. 
+  #
+  # ruby-ffi makes it hard to use the g_signal_connect user data param 
+  # to pass the function pointer through, unfortunately.
+  #
+  # We can't throw exceptions across C, so we must catch everything.
+
+  MARSHAL_PROGRESS = Proc.new do |handler|
+    FFI::Function.new(:void, [:pointer, :pointer, :pointer]) do |vi, prog, cb|
+      begin
+        handler.(Progress.new(prog))
+      rescue Exception => e
+        puts "progress: #{e}"
+      end
+    end
+  end
+
+  MARSHAL_READ = Proc.new do |handler|
+    FFI::Function.new(:int64_t, [:pointer, :pointer, :int64_t]) do |i, p, len|
+      begin
+        result = handler.(p, len)
+      rescue Exception => e
+        puts "read: #{e}"
+        result = 0
+      end
+
+      result
+    end
+  end
+
+  MARSHAL_SEEK = Proc.new do |handler|
+    FFI::Function.new(:int64_t, [:pointer, :int64_t, :int]) do |i, off, whence|
+      begin
+        result = handler.(off, whence)
+      rescue Exception => e
+        puts "seek: #{e}"
+        result = -1
+      end
+
+      result
+    end
+  end
+
+  MARSHAL_WRITE = Proc.new do |handler|
+    FFI::Function.new(:int64_t, [:pointer, :pointer, :int64_t]) do |i, p, len|
+      begin
+        result = handler.(p, len)
+      rescue Exception => e
+        puts "write: #{e}"
+        result = 0
+      end
+
+      result
+    end
+  end
+
+  MARSHAL_FINISH = Proc.new do |handler|
+    FFI::Function.new(:void, [:pointer, :pointer]) do |i, cb|
+      begin
+        handler.()
+      rescue Exception => e
+        puts "finish: #{e}"
+      end
+    end
+  end
+
+  # map signal name to marshal proc
+  MARSHAL_ALL = {
+    :preeval => MARSHAL_PROGRESS,
+    :eval => MARSHAL_PROGRESS,
+    :posteval => MARSHAL_PROGRESS,
+    :read => MARSHAL_READ,
+    :seek => MARSHAL_SEEK,
+    :write => MARSHAL_WRITE,
+    :finish => MARSHAL_FINISH,
+  }
+
   attach_function :vips_enum_from_nick, [:string, :GType, :string], :int
   attach_function :vips_enum_nick, [:GType, :int], :string
 
@@ -115,15 +206,15 @@ module Vips
     # return a pspec, or nil ... nil wil leave a message in the error log
     # which you must clear
     def get_pspec name
-      pspec = GObject::GParamSpecPtr.new
+      ppspec = GObject::GParamSpecPtr.new
       argument_class = Vips::ArgumentClassPtr.new
       argument_instance = Vips::ArgumentInstancePtr.new
 
       result = Vips::vips_object_get_argument self, name,
-          pspec, argument_class, argument_instance
+          ppspec, argument_class, argument_instance
       return nil if result != 0
 
-      pspec
+      ppspec[:value]
     end
 
     # return a gtype, raise an error on not found
@@ -131,7 +222,7 @@ module Vips
       pspec = get_pspec name
       raise Vips::Error unless pspec
 
-      pspec[:value][:value_type]
+      pspec[:value_type]
     end
 
     # return a gtype, 0 on not found
@@ -142,7 +233,7 @@ module Vips
         return 0
       end
 
-      pspec[:value][:value_type]
+      pspec[:value_type]
     end
 
     def get name
@@ -151,6 +242,7 @@ module Vips
       gvalue.init gtype
       GObject::g_object_get_property self, name, gvalue
       result = gvalue.get
+      gvalue.unset
 
       GLib::logger.debug("Vips::Object.get") { "#{name} == #{result}" }
 
@@ -165,7 +257,33 @@ module Vips
       gvalue.init gtype
       gvalue.set value
       GObject::g_object_set_property self, name, gvalue
+      gvalue.unset
     end
+
+    def signal_connect name, handler=nil
+      marshal = MARSHAL_ALL[name.to_sym]
+      raise Vips::Error, "unsupported signal #{name}" if marshal == nil
+
+      if block_given? 
+        # This will grab any block given to us and make it into a proc
+        prc = Proc.new
+      elsif handler
+        # We assume the hander is a proc (perhaps we should test)
+        prc = handler
+      else
+        raise Vips::Error, "must supply either block or handler"
+      end
+
+      # The marshal function will make a closure with the right type signature 
+      # for the selected signal
+      callback = marshal.(prc)
+
+      # we need to make sure this is not GCd while self is alive
+      @references << callback
+
+      GObject::g_signal_connect_data(self, name.to_s, callback, nil, nil, 0)
+    end
+
   end
 
   class ObjectClass < FFI::Struct

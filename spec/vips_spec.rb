@@ -71,6 +71,15 @@ RSpec.describe Vips do
       expect(embed.bands).to eq(1)
     end
 
+    it 'can handle enum arguments with underscores' do
+      black = Vips::Image.black 200, 100, bands: 3
+      mono = black.colourspace :b_w
+
+      expect(mono.width).to eq(200)
+      expect(mono.height).to eq(100)
+      expect(mono.bands).to eq(1)
+    end
+
     it 'enum arguments can be strings' do
       black = Vips::Operation.call "black", [200, 200]
       embed = Vips::Operation.call "embed", [black, 10, 10, 500, 500],
@@ -79,6 +88,16 @@ RSpec.describe Vips do
       expect(embed.width).to eq(500)
       expect(embed.height).to eq(500)
       expect(embed.bands).to eq(1)
+    end
+
+    it 'enum arguments can be ints' do
+      black = Vips::Image.black 200, 100
+      # not angle 0, enum 0 (VIPS_ANGLE_D0)
+      rot = black.rot 0
+
+      expect(rot.width).to eq(200)
+      expect(rot.height).to eq(100)
+      expect(rot.bands).to eq(1)
     end
 
     it 'can return optional output args' do
@@ -108,5 +127,6 @@ RSpec.describe Vips do
 
       expect { black.crop(10, 10, 1, 1) }.to raise_exception(Vips::Error)
     end
+
   end
 end

@@ -10,6 +10,29 @@ require 'logger'
 # This module uses FFI to make a simple layer over the glib and gobject
 # libraries.
 
+# Generate a library name for ffi.
+#
+# Platform notes:
+# linux:
+#   Some distros allow "libvips.so", but only if the -dev headers have been
+#   installed. To work everywhere, you must include the ABI number.
+#   Confusingly, the file extension is not at the end. ffi adds the "lib"
+#   prefix.
+# mac:
+#   As linux, but the extension is at the end and is added by ffi.
+# windows:
+#   The ABI number must be included, but with a hyphen. ffi does not add a
+#   "lib" prefix or a ".dll" suffix.
+def library_name(name, abi_number)
+  if FFI::Platform.windows?
+    "lib#{name}-#{abi_number}.dll"
+  elsif FFI::Platform.mac?
+    "#{name}.#{abi_number}"
+  else
+    "#{name}.so.#{abi_number}"
+  end
+end
+
 module GLib
   class << self
     attr_accessor :logger
@@ -19,13 +42,7 @@ module GLib
 
   extend FFI::Library
 
-  if FFI::Platform.windows?
-    glib_libname = 'libglib-2.0-0.dll'
-  else
-    glib_libname = 'glib-2.0'
-  end
-
-  ffi_lib glib_libname
+  ffi_lib library_name('glib-2.0', 0)
 
   attach_function :g_malloc, [:size_t], :pointer
 
@@ -117,13 +134,7 @@ end
 module GObject
   extend FFI::Library
 
-  if FFI::Platform.windows?
-    gobject_libname = 'libgobject-2.0-0.dll'
-  else
-    gobject_libname = 'gobject-2.0'
-  end
-
-  ffi_lib gobject_libname
+  ffi_lib library_name('gobject-2.0', 0)
 
   # we can't just use ulong, windows has different int sizing rules
   if FFI::Platform::ADDRESS_SIZE == 64
@@ -155,7 +166,7 @@ require 'vips/gobject'
 require 'vips/gvalue'
 
 # This module provides a binding for the [libvips image processing
-# library](https://jcupitt.github.io/libvips/).
+# library](https://libvips.github.io/libvips/).
 #
 # # Example
 #
@@ -201,6 +212,9 @@ require 'vips/gvalue'
 # memory buffers, create images that wrap C-style memory arrays, or make images
 # from constants.
 #
+# Use {Source} and {Image.new_from_source} to load images from any data
+# source, for example URIs.
+#
 # The next line:
 #
 # ```ruby
@@ -241,6 +255,9 @@ require 'vips/gvalue'
 # write any format supported by vips: the file type is set from the filename
 # suffix. You can also write formatted images to memory buffers, or dump
 # image data to a raw memory array.
+#
+# Use {Target} and {Image#write_to_target} to write formatted images to 
+# any data sink, for example URIs.
 #
 # # How it works
 #
@@ -393,12 +410,12 @@ require 'vips/gvalue'
 # # Automatic YARD documentation
 #
 # The bulk of these API docs are generated automatically by
-# {Vips::generate_yard}. It examines
+# {Vips::Yard::generate}. It examines
 # libvips and writes a summary of each operation and the arguments and options
 # that that operation expects.
 #
 # Use the [C API
-# docs](https://jcupitt.github.io/libvips/API/current)
+# docs](https://libvips.github.io/libvips/API/current)
 # for more detail.
 #
 # # Enums
@@ -422,6 +439,55 @@ require 'vips/gvalue'
 #
 # If you want to avoid the copies, you'll need to call drawing operations
 # yourself.
+#
+# # Progress
+#
+# You can attach signal handlers to images to watch computation progress. For
+# example:
+#
+# ```ruby
+# image = Vips::Image.black 1, 100000
+# image.set_progress true
+# 
+# def progress_to_s(name, progress)
+#   puts "#{name}:"
+#   puts "    run = #{progress[:run]}"
+#   puts "    eta = #{progress[:eta]}"
+#   puts "    tpels = #{progress[:tpels]}"
+#   puts "    npels = #{progress[:npels]}"
+#   puts "    percent = #{progress[:percent]}"
+# end
+# 
+# image.signal_connect :preeval do |progress|
+#   progress_to_s("preeval", progress)
+# end
+# 
+# image.signal_connect :eval do |progress|
+#   progress_to_s("eval", progress)
+#   image.set_kill(true) if progress[:percent] > 50
+# end
+# 
+# image.signal_connect :posteval do |progress|
+#   progress_to_s("posteval", progress)
+# end
+# 
+# image.avg
+# ```
+# 
+# The `:eval` signal will fire for every tile that is processed. You can stop
+# progress with {Image#set_kill} and processing will end with an exception.
+#
+# User streams
+#
+# You can make your own input and output stream objects with {SourceCustom} and
+# {TargetCustom}. For example:
+#
+# ```ruby
+# file = File.open "some/file", "rb"
+# source = Vips::SourceCustom.new
+# source.on_read { |length| file.read length }
+# image = Vips::Image.new_from_source source, "", access: "sequential"
+# ```
 #
 # # Overloads
 #
@@ -462,7 +528,7 @@ module Vips
   if FFI::Platform.windows?
     vips_libname = 'libvips-42.dll'
   else
-    vips_libname = File.expand_path(FFI::map_library_name('vips'), __dir__)
+    vips_libname = File.expand_path(FFI.map_library_name('vips'), __dir__)
   end
 
   ffi_lib vips_libname
@@ -609,7 +675,7 @@ module Vips
   LIBRARY_VERSION = Vips::version_string
 
   # libvips has this arbitrary number as a sanity-check upper bound on image
-  # size. It's sometimes useful for know whan calculating image ratios.
+  # size. It's sometimes useful to know when calculating scale factors.
   MAX_COORD = 10000000
 end
 
@@ -617,4 +683,10 @@ require 'vips/object'
 require 'vips/operation'
 require 'vips/image'
 require 'vips/interpolate'
+require 'vips/region'
 require 'vips/version'
+require 'vips/connection'
+require 'vips/source'
+require 'vips/sourcecustom'
+require 'vips/target'
+require 'vips/targetcustom'

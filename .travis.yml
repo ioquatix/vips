@@ -41,6 +41,7 @@ matrix:
     - rvm: 2.6
       os: osx
       env: PKG_CONFIG_PATH="/usr/local/opt/libffi/lib/pkgconfig"
+    - rvm: 2.7
     - rvm: truffleruby
     - rvm: jruby-head
     - rvm: ruby-head

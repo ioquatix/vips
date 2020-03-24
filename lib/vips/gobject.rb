@@ -73,6 +73,9 @@ module GObject
     def initialize ptr
       # GLib::logger.debug("GObject::GObject.initialize") {"ptr = #{ptr}"}
       @struct = ffi_managed_struct.new ptr
+
+      # sometimes we need to keep refs across C calls ... hide them here
+      @references = []
     end
 
     # access to the casting struct for this class
@@ -111,8 +114,13 @@ module GObject
     layout :value, GParamSpec.ptr
   end
 
-  attach_function :g_param_spec_get_blurb, [GParamSpec.ptr], :string
+  attach_function :g_param_spec_get_blurb, [:pointer], :string
 
   attach_function :g_object_ref, [:pointer], :void
   attach_function :g_object_unref, [:pointer], :void
+
+  # we just use one gcallback type for every signal, hopefully this is OK
+  callback :gcallback, [:pointer], :void
+  attach_function :g_signal_connect_data,
+    [:pointer, :string, :gcallback, :pointer, :pointer, :int], :long
 end

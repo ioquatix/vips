@@ -1,10 +1,12 @@
 # Vips
 
+Programs that use `vips` don't manipulate images directly, instead they create pipelines of image processing operations building on a source image. When the end of the pipe is connected to a destination, the whole pipeline executes at once, streaming the image in parallel from source to destination a section at a time.  Because `ruby-vips` is parallel, it's quick, and because it doesn't need to keep entire images in memory, it's light.
+
 This gem is a backwards compatible fork of `ruby-vips` but also includes (and compiles) the [libvips] source code.
 
 [![Build Status](https://secure.travis-ci.org/ioquatix/vips.svg)](http://travis-ci.org/ioquatix/vips)
 
-[libvips]: https://jcupitt.github.io/libvips
+[libvips]: https://libvips.github.io/libvips
 
 ## Installation
 

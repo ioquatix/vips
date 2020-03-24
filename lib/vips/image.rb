@@ -14,6 +14,9 @@ module Vips
 
   attach_function :vips_image_copy_memory, [:pointer], :pointer
 
+  attach_function :vips_image_set_progress, [:pointer, :bool], :void
+  attach_function :vips_image_set_kill, [:pointer, :bool], :void
+
   attach_function :vips_filename_get_filename, [:string], :pointer
   attach_function :vips_filename_get_options, [:string], :pointer
 
@@ -22,6 +25,11 @@ module Vips
   attach_function :vips_foreign_find_load_buffer, [:pointer, :size_t], :string
   attach_function :vips_foreign_find_save_buffer, [:string], :string
 
+  if Vips::at_least_libvips?(8, 9)
+    attach_function :vips_foreign_find_load_source, [:pointer], :string
+    attach_function :vips_foreign_find_save_target, [:string], :string
+  end
+
   attach_function :vips_image_write_to_memory,
       [:pointer, SizeStruct.ptr], :pointer
 
@@ -29,19 +37,13 @@ module Vips
   attach_function :vips_image_get,
       [:pointer, :string, GObject::GValue.ptr], :int
 
-  # vips_image_get_fields was added in libvips 8.5
-  begin
+  if Vips::at_least_libvips?(8, 5)
     attach_function :vips_image_get_fields, [:pointer], :pointer
-  rescue FFI::NotFoundError
-    nil
+    attach_function :vips_image_hasalpha, [:pointer], :int
   end
 
-  # vips_addalpha was added in libvips 8.6
   if Vips::at_least_libvips?(8, 6)
     attach_function :vips_addalpha, [:pointer, :pointer, :varargs], :int
-  end
-  if Vips::at_least_libvips?(8, 5)
-    attach_function :vips_image_hasalpha, [:pointer], :int
   end
 
   attach_function :vips_image_set,
@@ -121,7 +123,7 @@ module Vips
 
       unless Image::complex? image.format
         if image.bands % 2 != 0
-          raise Error, "not an even number of bands"
+          raise Vips::Error, "not an even number of bands"
         end
 
         unless Image::float? image.format
@@ -197,13 +199,13 @@ module Vips
     # load options, for example:
     #
     # ```
-    # image = Vips::new_from_file "fred.jpg[shrink=2]"
+    # image = Vips::Image.new_from_file "fred.jpg[shrink=2]"
     # ```
     #
     # You can also supply options as a hash, for example:
     #
     # ```
-    # image = Vips::new_from_file "fred.jpg", shrink: 2
+    # image = Vips::Image.new_from_file "fred.jpg", shrink: 2
     # ```
     #
     # The full set of options available depend upon the load operation that
@@ -274,9 +276,48 @@ module Vips
     # @return [Image] the loaded image
     def self.new_from_buffer data, option_string, **opts
       loader = Vips::vips_foreign_find_load_buffer data, data.bytesize
-      raise Vips::Error if loader == nil
+      raise Vips::Error if loader.nil?
 
       Vips::Operation.call loader, [data], opts, option_string
+    end
+
+    # Create a new {Image} from a source. Load options may be passed as
+    # strings or appended as a hash. For example:
+    #
+    # ```
+    # source = Vips::Source.new_from_file("k2.jpg")
+    # image = Vips::Image.new_from_source source, "shrink=2"
+    # ```
+    #
+    # or alternatively:
+    #
+    # ```
+    # image = Vips::Image.new_from_source source, "", shrink: 2
+    # ```
+    #
+    # The options available depend on the file format. Try something like:
+    #
+    # ```
+    # $ vips jpegload_source
+    # ```
+    #
+    # at the command-line to see the available options. Not all loaders
+    # support load from source, but at least JPEG, PNG and
+    # TIFF images will work.
+    #
+    # Loading is fast: only enough data is read to be able to fill
+    # out the header. Pixels will only be read and decompressed when they are 
+    # needed.
+    #
+    # @param source [Vips::Source] the source to load from
+    # @param option_string [String] load options as a string
+    # @macro vips.loadopts
+    # @return [Image] the loaded image
+    def self.new_from_source source, option_string, **opts
+      loader = Vips::vips_foreign_find_load_source source
+      raise Vips::Error if loader.nil?
+
+      Vips::Operation.call loader, [source], opts, option_string
     end
 
     def self.matrix_from_array width, height, array
@@ -295,13 +336,13 @@ module Vips
     # For example:
     #
     # ```
-    # image = Vips::new_from_array [1, 2, 3]
+    # image = Vips::Image.new_from_array [1, 2, 3]
     # ```
     #
     # or
     #
     # ```
-    # image = Vips::new_from_array [
+    # image = Vips::Image.new_from_array [
     #     [-1, -1, -1],
     #     [-1, 16, -1],
     #     [-1, -1, -1]], 8
@@ -436,13 +477,50 @@ module Vips
       option_string = Vips::p2str(Vips::vips_filename_get_options format_string)
       saver = Vips::vips_foreign_find_save_buffer filename
       if saver == nil
-        raise Vips::Error, "No known saver for '#{filename}'."
+        raise Vips::Error, "No known buffer saver for '#{filename}'."
       end
 
       buffer = Vips::Operation.call saver, [self], opts, option_string
       raise Vips::Error if buffer == nil
 
       return buffer
+    end
+
+    # Write this image to a target. Save options may be encoded in
+    # the format_string or given as a hash. For example:
+    #
+    # ```ruby
+    # target = Vips::Target.new_to_file "k2.jpg"
+    # image.write_to_target target, ".jpg[Q=90]"
+    # ```
+    #
+    # or equivalently:
+    #
+    # ```ruby
+    # image.write_to_target target, ".jpg", Q: 90
+    # ```
+    #
+    # The full set of save options depend on the selected saver. Try
+    # something like:
+    #
+    # ```
+    # $ vips jpegsave_target
+    # ```
+    #
+    # to see all the available options for JPEG save.
+    #
+    # @param target [Vips::Target] the target to write to
+    # @param format_string [String] save format plus string options
+    # @macro vips.saveopts
+    def write_to_target target, format_string, **opts
+      filename = Vips::p2str(Vips::vips_filename_get_filename format_string)
+      option_string = Vips::p2str(Vips::vips_filename_get_options format_string)
+      saver = Vips::vips_foreign_find_save_target filename
+      if saver == nil
+        raise Vips::Error, "No known target saver for '#{filename}'."
+      end
+
+      Vips::Operation.call saver, [self, target], opts, option_string
     end
 
     # Write this image to a large memory buffer.
@@ -457,6 +535,28 @@ module Vips
       ptr = FFI::AutoPointer.new(ptr, GLib::G_FREE)
 
       ptr.get_bytes 0, len[:value]
+    end
+
+    # Turn progress signalling on and off. 
+    #
+    # If this is on, the most-downstream image from this image will issue
+    # progress signals. 
+    #
+    # @see Object#signal_connect
+    # @param state [Boolean] progress signalling state
+    def set_progress state
+      Vips::vips_image_set_progress self, state
+    end
+
+    # Kill computation of this time.
+    #
+    # Set true to stop computation of this image. You can call this from a
+    # progress handler, for example.
+    #
+    # @see Object#signal_connect
+    # @param kill [Boolean] stop computation
+    def set_kill kill
+      Vips::vips_image_set_kill self, kill
     end
 
     # Get the `GType` of a metadata field. The result is 0 if no such field
@@ -497,10 +597,11 @@ module Vips
       end
 
       gvalue = GObject::GValue.alloc
-      result = Vips::vips_image_get self, name, gvalue
-      raise Vips::Error if result != 0
+      raise Vips::Error if Vips::vips_image_get(self, name, gvalue) != 0
+      result = gvalue.get
+      gvalue.unset
 
-      gvalue.get
+      result
     end
 
     # Get the names of all fields on an image. Use this to loop over all
@@ -545,6 +646,7 @@ module Vips
       gvalue.init gtype
       gvalue.set value
       Vips::vips_image_set self, name, gvalue
+      gvalue.unset
     end
 
     # Set the value of a metadata item on an image. The metadata item must
@@ -1301,23 +1403,20 @@ module Vips
 end
 
 module Vips
-  # This method generates yard comments for all the dynamically bound
+  # This module generates yard comments for all the dynamically bound
   # vips operations.
   #
   # Regenerate with something like:
   #
   # ```
   # $ ruby > methods.rb
-  # require 'vips'; Vips::generate_yard
+  # require 'vips'; Vips::Yard.generate
   # ^D
   # ```
 
-  def self.generate_yard
-    # these have hand-written methods, see above
-    no_generate = ["scale", "bandjoin", "composite", "ifthenelse"]
-
+  module Yard
     # map gobject's type names to Ruby
-    map_go_to_ruby = {
+    MAP_GO_TO_RUBY = {
       "gboolean" => "Boolean",
       "gint" => "Integer",
       "gdouble" => "Float",
@@ -1325,116 +1424,99 @@ module Vips
       "gchararray" => "String",
       "VipsImage" => "Vips::Image",
       "VipsInterpolate" => "Vips::Interpolate",
+      "VipsConnection" => "Vips::Connection",
+      "VipsSource" => "Vips::Source",
+      "VipsTarget" => "Vips::Target",
+      "VipsSourceCustom" => "Vips::SourceCustom",
+      "VipsTargetCustom" => "Vips::TargetCustom",
       "VipsArrayDouble" => "Array<Double>",
       "VipsArrayInt" => "Array<Integer>",
       "VipsArrayImage" => "Array<Image>",
       "VipsArrayString" => "Array<String>",
     }
 
-    generate_operation = lambda do |gtype, nickname, op|
-      op_flags = op.get_flags
-      return if (op_flags & OPERATION_DEPRECATED) != 0
-      return if no_generate.include? nickname
+    # these have hand-written methods, see above
+    NO_GENERATE = ["scale", "bandjoin", "composite", "ifthenelse"]
 
-      description = Vips::vips_object_get_description op
+    # these are aliased (appear under several names)
+    ALIAS = ["crop"]
 
-      # find and classify all the arguments the operator can take
-      required_input = []
-      optional_input = []
-      required_output = []
-      optional_output = []
-      member_x = nil
-      op.argument_map do |pspec, argument_class, _argument_instance|
-        arg_flags = argument_class[:flags]
-        next if (arg_flags & ARGUMENT_CONSTRUCT) == 0
-        next if (arg_flags & ARGUMENT_DEPRECATED) != 0
+    # turn a gtype into a ruby type name
+    def self.gtype_to_ruby gtype
+      fundamental = GObject::g_type_fundamental gtype
+      type_name = GObject::g_type_name gtype
 
-        name = pspec[:name].tr("-", "_")
-        # 'in' as a param name confuses yard
-        name = "im" if name == "in"
-        gtype = pspec[:value_type]
-        fundamental = GObject::g_type_fundamental gtype
-        type_name = GObject::g_type_name gtype
-        if map_go_to_ruby.include? type_name
-          type_name = map_go_to_ruby[type_name]
-        end
-        if fundamental == GObject::GFLAGS_TYPE ||
-           fundamental == GObject::GENUM_TYPE
-          type_name = "Vips::" + type_name[/Vips(.*)/, 1]
-        end
-        blurb = GObject::g_param_spec_get_blurb pspec
-        value = {
-          name: name,
-          flags: arg_flags,
-          gtype: gtype,
-          type_name: type_name,
-          blurb: blurb
-        }
-
-        if (arg_flags & ARGUMENT_INPUT) != 0
-          if (arg_flags & ARGUMENT_REQUIRED) != 0
-            # note the first required input image, if any ... we
-            # will be a method of this instance
-            if !member_x && gtype == Vips::IMAGE_TYPE
-              member_x = value
-            else
-              required_input << value
-            end
-          else
-            optional_input << value
-          end
-        end
-
-        # MODIFY INPUT args count as OUTPUT as well
-        if (arg_flags & ARGUMENT_OUTPUT) != 0 ||
-           ((arg_flags & ARGUMENT_INPUT) != 0 &&
-            (arg_flags & ARGUMENT_MODIFY) != 0)
-          if (arg_flags & ARGUMENT_REQUIRED) != 0
-            required_output << value
-          else
-            optional_output << value
-          end
-        end
+      if MAP_GO_TO_RUBY.include? type_name
+        type_name = MAP_GO_TO_RUBY[type_name]
       end
 
+      if fundamental == GObject::GFLAGS_TYPE ||
+         fundamental == GObject::GENUM_TYPE
+        type_name = "Vips::" + type_name[/Vips(.*)/, 1]
+      end
+
+      type_name
+    end
+
+    def self.generate_operation introspect
+      return if (introspect.flags & OPERATION_DEPRECATED) != 0
+      return if NO_GENERATE.include? introspect.name
+
+      method_args = introspect.method_args
+      required_output = introspect.required_output
+      optional_input = introspect.optional_input
+      optional_output = introspect.optional_output
+
       print "# @!method "
-      print "self." unless member_x
-      print "#{nickname}("
-      print required_input.map { |x| x[:name] }.join(", ")
-      print ", " if required_input.length > 0
+      print "self." unless introspect.member_x
+      print "#{introspect.name}("
+      print method_args.map{ |x| x[:yard_name] }.join(", ")
+      print ", " if method_args.length > 0
       puts "**opts)"
 
-      puts "#   #{description.capitalize}."
+      puts "#   #{introspect.description.capitalize}."
 
-      required_input.each do |arg|
-        puts "#   @param #{arg[:name]} [#{arg[:type_name]}] #{arg[:blurb]}"
+      method_args.each do |details|
+        yard_name = details[:yard_name]
+        gtype = details[:gtype]
+        blurb = details[:blurb]
+
+        puts "#   @param #{yard_name} [#{gtype_to_ruby(gtype)}] #{blurb}"
       end
 
       puts "#   @param opts [Hash] Set of options"
-      optional_input.each do |arg|
-        puts "#   @option opts [#{arg[:type_name]}] :#{arg[:name]} " +
-             "#{arg[:blurb]}"
+      optional_input.each do |arg_name, details|
+        yard_name = details[:yard_name]
+        gtype = details[:gtype]
+        blurb = details[:blurb]
+
+        puts "#   @option opts [#{gtype_to_ruby(gtype)}] :#{yard_name} " +
+             "#{blurb}"
       end
-      optional_output.each do |arg|
-        print "#   @option opts [#{arg[:type_name]}] :#{arg[:name]}"
-        puts " Output #{arg[:blurb]}"
+      optional_output.each do |arg_name, details|
+        yard_name = details[:yard_name]
+        gtype = details[:gtype]
+        blurb = details[:blurb]
+
+        print "#   @option opts [#{gtype_to_ruby(gtype)}] :#{yard_name}"
+        puts " Output #{blurb}"
       end
 
       print "#   @return ["
       if required_output.length == 0
         print "nil"
       elsif required_output.length == 1
-        print required_output.first[:type_name]
+        print gtype_to_ruby(required_output.first[:gtype])
       else
         print "Array<"
-        print required_output.map { |x| x[:type_name] }.join(", ")
+        print required_output.map{ |x| gtype_to_ruby(x[:gtype]) }.join(", ")
         print ">"
       end
       if optional_output.length > 0
         print ", Hash<Symbol => Object>"
       end
       print "] "
-      print required_output.map { |x| x[:blurb] }.join(", ")
+      print required_output.map{ |x| x[:blurb] }.join(", ")
       if optional_output.length > 0
         print ", " if required_output.length > 0
         print "Hash of optional output items"
@@ -1444,30 +1526,42 @@ module Vips
       puts ""
     end
 
-    generate_class = lambda do |gtype, _|
-      nickname = Vips::nickname_find gtype
-
-      if nickname
-        begin
-          # can fail for abstract types
-          op = Vips::Operation.new nickname
-        rescue Vips::Error
-          nil
-        end
-
-        generate_operation.(gtype, nickname, op) if op
+    def self.generate
+      alias_gtypes = {}
+      ALIAS.each do |name| 
+        gtype = Vips::type_find "VipsOperation", name
+        alias_gtypes[gtype] = name 
       end
 
-      Vips::vips_type_map gtype, generate_class, nil
+      generate_class = lambda do |gtype, _|
+        if alias_gtypes.key? gtype
+          name = alias_gtypes[gtype]
+        else
+          name = Vips::nickname_find gtype
+        end
+
+        if name
+          begin
+            # can fail for abstract types
+            introspect = Vips::Introspect.get_yard name
+          rescue Vips::Error
+            nil
+          end
+
+          generate_operation(introspect) if introspect
+        end
+
+        Vips::vips_type_map gtype, generate_class, nil
+      end
+
+      puts "module Vips"
+      puts "  class Image"
+      puts ""
+
+      generate_class.(GObject::g_type_from_name("VipsOperation"), nil)
+
+      puts "  end"
+      puts "end"
     end
-
-    puts "module Vips"
-    puts "  class Image"
-    puts ""
-
-    generate_class.(GObject::g_type_from_name("VipsOperation"), nil)
-
-    puts "  end"
-    puts "end"
   end
 end
