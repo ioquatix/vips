@@ -1,4 +1,4 @@
 
 module Vips
-	VERSION = "8.8.4"
+	VERSION = "8.9.1"
 end
