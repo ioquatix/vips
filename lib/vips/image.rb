@@ -151,34 +151,6 @@ module Vips
       end
     end
 
-    # Write can fail due to no file descriptors and memory can fill if
-    # large objects are not collected fairly soon. We can't try a
-    # write and GC and retry on fail, since the write may take a
-    # long time and may not be repeatable.
-    #
-    # GCing before every write would have a horrible effect on
-    # performance, so as a compromise we GC every @@gc_interval writes.
-    #
-    # ruby2.1 introduced a generational GC which is fast enough to be
-    # able to GC on every write.
-
-    @@generational_gc = RUBY_ENGINE == "ruby" && RUBY_VERSION.to_f >= 2.1
-
-    @@gc_interval = 100
-    @@gc_countdown = @@gc_interval
-
-    def write_gc
-      if @@generational_gc
-        GC.start full_mark: false
-      else
-        @@gc_countdown -= 1
-        if @@gc_countdown < 0
-          @@gc_countdown = @@gc_interval
-          GC.start
-        end
-      end
-    end
-
     public
 
     def inspect
@@ -432,8 +404,6 @@ module Vips
       end
 
       Vips::Operation.call saver, [self, filename], opts, option_string
-
-      write_gc
     end
 
     # Write this image to a memory buffer. Save options may be encoded in
@@ -471,8 +441,6 @@ module Vips
 
       buffer = Vips::Operation.call saver, [self], opts, option_string
       raise Vips::Error if buffer == nil
-
-      write_gc
 
       return buffer
     end
