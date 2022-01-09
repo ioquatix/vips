@@ -38,12 +38,10 @@ jobs:
       matrix:
         os-version: [ 'ubuntu-20.04' ]
         ruby-version:
-          - "2.3"
-          - "2.4"
-          - "2.5"
           - "2.6"
           - "2.7"
           - "3.0"
+          - "3.1"
           - jruby
       fail-fast: false
 
@@ -68,10 +66,9 @@ jobs:
       - name: Install libvips
         env:
           DEBIAN_FRONTEND: noninteractive
-        run:
-          - sudo apt-get install --fix-missing -qq -o Acquire::Retries=3
-            libvips 
-          - rake ext
+        run: |
+          sudo apt-get install --fix-missing -qq -o Acquire::Retries=3 libvips
+          bundle exec rake ext
 
       - name: Run Tests
         run: bundle exec rake spec

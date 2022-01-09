@@ -19,9 +19,9 @@ end
 task default: :spec
 
 task :ext do
-	Dir.chdir "ext" do
-		sh "rake"
-	end
+  Dir.chdir "ext" do
+    sh "rake"
+  end
 end
 
 unless RUBY_PLATFORM.include?("java")
