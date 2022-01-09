@@ -22,9 +22,7 @@ Gem::Specification.new do |spec|
 
 	spec.extensions = %w[ext/Rakefile]
 
-	spec.add_runtime_dependency "ffi", ["~> 1.9"]
-
-	spec.add_development_dependency "pry"
+	spec.add_runtime_dependency "ffi", ["~> 1.12"]
 
 	spec.add_development_dependency "yard", "~> 0.8"
 	spec.add_development_dependency "redcarpet", "~> 3.3"

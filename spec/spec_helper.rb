@@ -1,46 +1,35 @@
-require 'vips'
+require "vips"
 
-require 'tempfile'
-require 'pathname'
+require "tempfile"
+require "pathname"
 
-module Spec
-  module Path
-    def root
-      @root ||= Pathname.new(File.expand_path('..', __FILE__))
-    end
-
-    def sample(*path)
-      root.join 'samples', *path
-    end
-
-    def tmp(*path)
-      root.join 'tmp', 'working', *path
-    end
-
-    extend self
-  end
-
-  module Helpers
-    def reset_working!
-      FileUtils.rm Dir[tmp.join('*.*')], :force => true
-      FileUtils.mkdir_p(tmp)
-    end
-  end
-end
+Vips.set_debug ENV["DEBUG"]
+# Vips.leak_set true
 
 def simg(name)
-  Spec::Path::sample(name).to_s
+  File.join(__dir__, "samples", name)
 end
 
 def timg(name)
-  Spec::Path::tmp(name).to_s
+  File.join(@temp_dir, name)
 end
 
 RSpec.configure do |config|
-  config.include Spec::Path
-  config.include Spec::Helpers
+  config.around do |example|
+    Dir.mktmpdir("ruby-vips-spec-") do |dir|
+      @temp_dir = dir
+      example.run
+    end
+  end
 
-  config.before :each do
-    reset_working!
+  config.before(:example, jpeg: true) do
+    skip "required jpegload for this spec" unless has_jpeg?
+  end
+
+  config.before(:example, :version) do |example|
+    required_version = example.metadata[:version]
+    unless Vips.at_least_libvips?(*required_version)
+      skip "required at least #{required_version.join(".")} version of the libvips"
+    end
   end
 end

@@ -1,24 +1,30 @@
 # Vips
 
-Programs that use `vips` don't manipulate images directly, instead they create pipelines of image processing operations building on a source image. When the end of the pipe is connected to a destination, the whole pipeline executes at once, streaming the image in parallel from source to destination a section at a time.  Because `ruby-vips` is parallel, it's quick, and because it doesn't need to keep entire images in memory, it's light.
+[![Gem Version](https://badge.fury.io/rb/ruby-vips.svg)](https://badge.fury.io/rb/ruby-vips)
+[![Test](https://github.com/libvips/ruby-vips/workflows/Test/badge.svg)](https://github.com/libvips/ruby-vips/actions?query=workflow%3ATest)
 
 This gem is a backwards compatible fork of `ruby-vips` but also includes (and compiles) the [libvips] source code.
 
-[![Build Status](https://secure.travis-ci.org/ioquatix/vips.svg)](http://travis-ci.org/ioquatix/vips)
+libvips is a [demand-driven, horizontally
+threaded](https://github.com/libvips/libvips/wiki/Why-is-libvips-quick)
+image processing library. Compared to similar
+libraries, [libvips runs quickly and uses little
+memory](https://github.com/libvips/libvips/wiki/Speed-and-memory-use).
+libvips is licensed under the [LGPL
+2.1+](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html).
 
 [libvips]: https://libvips.github.io/libvips
 
 ## Installation
 
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'vips'
+``` shell
+$ bundle add vips
 ```
 
-And then execute:
+## Example
 
-	$ bundle
+```ruby
+require "vips"
 
 Or install it yourself as:
 
@@ -40,7 +46,24 @@ Exactly the same way as [ruby-vips].
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
 
-## License
+## Documentation
+
+There are [full API docs for ruby-vips on
+rubydoc](https://www.rubydoc.info/gems/ruby-vips). This sometimes has issues
+updating, so we have a [copy on the gh-pages for this site as
+well](http://libvips.github.io/ruby-vips), which
+should always work.
+
+See the `Vips` section in the docs for a [tutorial introduction with
+examples](https://www.rubydoc.info/gems/ruby-vips/Vips).
+
+The [libvips reference manual](https://libvips.github.io/libvips/API/current/)
+has a complete explanation of every method.
+
+The [`example/`](https://github.com/libvips/ruby-vips/tree/master/example)
+directory has some simple example programs.
+
+## Benchmarks
 
 Released under the MIT license.
 
