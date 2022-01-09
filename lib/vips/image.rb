@@ -568,6 +568,8 @@ module Vips
       raise Vips::Error if saver.nil?
 
       Vips::Operation.call saver, [self, filename], opts, option_string
+
+      GC.start(full_mark: false)
     end
 
     # Write this image to a memory buffer. Save options may be encoded in
@@ -621,7 +623,7 @@ module Vips
         raise Vips::Error if buffer.nil?
       end
 
-      write_gc
+      GC.start(full_mark: false)
 
       return buffer
     end
@@ -660,6 +662,8 @@ module Vips
       raise Vips::Error if saver.nil?
 
       Vips::Operation.call saver, [self, target], opts, option_string
+
+      GC.start(full_mark: false)
     end
 
     # Write this image to a large memory buffer.
@@ -673,7 +677,11 @@ module Vips
       # wrap up as an autopointer
       ptr = FFI::AutoPointer.new(ptr, GLib::G_FREE)
 
-      ptr.get_bytes 0, len[:value]
+      data = ptr.get_bytes 0, len[:value]
+
+      GC.start(full_mark: false)
+
+      return data
     end
 
     # Turn progress signalling on and off.

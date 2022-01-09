@@ -21,15 +21,6 @@ libvips is licensed under the [LGPL
 $ bundle add vips
 ```
 
-## Example
-
-```ruby
-require "vips"
-
-Or install it yourself as:
-
-	$ gem install vips
-
 You'll still need to install `glib` and `gobject-introspection`.
 
 ## Usage

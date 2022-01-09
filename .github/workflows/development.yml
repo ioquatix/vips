@@ -1,0 +1,54 @@
+name: Development
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    name: ${{matrix.ruby}} on ${{matrix.os}}
+    runs-on: ${{matrix.os}}-latest
+    continue-on-error: ${{matrix.experimental}}
+    
+    strategy:
+      matrix:
+        os:
+          - ubuntu
+          # - macos
+        
+        ruby:
+          - "2.6"
+          - "2.7"
+          - "3.0"
+          - "3.1"
+        
+        experimental: [false]
+        env: [""]
+        
+        include:
+          - os: ubuntu
+            ruby: truffleruby
+            experimental: true
+          - os: ubuntu
+            ruby: jruby
+            experimental: true
+          - os: ubuntu
+            ruby: head
+            experimental: true
+    
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: ${{matrix.ruby}}
+        bundler-cache: true
+    
+    - name: Install libvips
+      env:
+        DEBIAN_FRONTEND: noninteractive
+      run: |
+        sudo apt-get update -qq -o Acquire::Retries=3
+        sudo apt-get install --fix-missing -qq -o Acquire::Retries=3 libvips
+        bundle exec rake ext
+    
+    - name: Run tests
+      timeout-minutes: 5
+      run: ${{matrix.env}} bundle exec rake spec
