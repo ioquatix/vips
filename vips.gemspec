@@ -15,22 +15,21 @@ Gem::Specification.new do |spec|
 	spec.files         = `git ls-files -z`.split("\x0").reject do |f|
 		f.match(%r{^(test|spec|features)/})
 	end
-	spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
+
 	spec.require_paths = ["lib"]
 	
 	spec.required_ruby_version = ">= 2.1"
 
 	spec.extensions = %w[ext/Rakefile]
 
-	spec.add_runtime_dependency "ffi", ["~> 1.12"]
+	spec.add_runtime_dependency "ffi", "~> 1.12"
 
-	spec.add_development_dependency "yard", "~> 0.8"
-	spec.add_development_dependency "redcarpet", "~> 3.3"
-	spec.add_development_dependency "github-markup", "~> 1.4"
+	spec.add_development_dependency "rake", "~> 13.0"
+	spec.add_development_dependency "rspec", "~> 3.3"
+	spec.add_development_dependency "yard", "~> 0.9.11"
+	spec.add_development_dependency "bundler", ">= 1.0"
 
-	spec.add_development_dependency "bundler"
-	spec.add_development_dependency "rspec", "~> 3.7"
-	spec.add_development_dependency "rake"
-	
-	spec.add_development_dependency "standardrb"
+	if Gem.ruby_version >= Gem::Version.new("2.2")
+		spec.add_development_dependency "standard"
+	end
 end

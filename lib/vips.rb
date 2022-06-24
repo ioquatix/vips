@@ -27,9 +27,9 @@ def library_name(name, abi_number)
   if FFI::Platform.windows?
     "lib#{name}-#{abi_number}.dll"
   elsif FFI::Platform.mac?
-    "#{name}.#{abi_number}"
+    "lib#{name}.#{abi_number}.dylib"
   else
-    "#{name}.so.#{abi_number}"
+    "lib#{name}.so.#{abi_number}"
   end
 end
 
@@ -570,7 +570,7 @@ require "vips/gvalue"
 module Vips
   extend FFI::Library
 
-  ffi_lib library_name("vips", 42)
+  ffi_lib File.expand_path(library_name("vips", 42), __dir__)
 
   LOG_DOMAIN = "VIPS"
   GLib.set_log_domain LOG_DOMAIN
@@ -625,7 +625,12 @@ module Vips
 
   attach_function :vips_leak_set, [:int], :void
   attach_function :vips_vector_set_enabled, [:int], :void
+  attach_function :vips_vector_isenabled, [], :int
   attach_function :vips_concurrency_set, [:int], :void
+  attach_function :vips_concurrency_get, [], :int
+
+  # Track the original default concurrency so we can reset to it.
+  DEFAULT_CONCURRENCY = vips_concurrency_get
 
   # vips_foreign_get_suffixes was added in libvips 8.8
   begin
@@ -640,20 +645,66 @@ module Vips
     vips_leak_set((leak ? 1 : 0))
   end
 
+  attach_function :vips_tracked_get_mem, [], :int
+  attach_function :vips_tracked_get_mem_highwater, [], :int
+  attach_function :vips_tracked_get_allocs, [], :int
+  attach_function :vips_tracked_get_files, [], :int
+  attach_function :vips_cache_get_max, [], :int
+  attach_function :vips_cache_get_max_mem, [], :int
+  attach_function :vips_cache_get_max_files, [], :int
   attach_function :vips_cache_set_max, [:int], :void
   attach_function :vips_cache_set_max_mem, [:int], :void
   attach_function :vips_cache_set_max_files, [:int], :void
+  attach_function :vips_cache_print, [], :void
+  attach_function :vips_cache_drop_all, [], :void
+
+  # Get the number of bytes currently allocated via vips_malloc.
+  def self.tracked_mem
+    vips_tracked_get_mem
+  end
+
+  # Get the greatest number of bytes ever actively allocated via vips_malloc.
+  def self.tracked_mem_highwater
+    vips_tracked_get_mem_highwater
+  end
+
+  # Get the number of active allocations.
+  def self.tracked_allocs
+    vips_tracked_get_allocs
+  end
+
+  # Get the number of open files.
+  def self.tracked_files
+    vips_tracked_get_files
+  end
+
+  # Get the maximum number of operations that libvips should cache.
+  def self.cache_max
+    vips_cache_get_max
+  end
+
+  # Get the maximum amount of memory that libvips uses for the operation cache.
+  def self.cache_max_mem
+    vips_cache_get_max_mem
+  end
+
+  # Get the maximum number of files libvips keeps open in the operation cache.
+  def self.cache_max_files
+    vips_cache_get_max_files
+  end
 
   # Set the maximum number of operations that libvips should cache. Set 0 to
   # disable the operation cache. The default is 1000.
   def self.cache_set_max size
     vips_cache_set_max size
+    cache_max
   end
 
   # Set the maximum amount of memory that libvips should use for the operation
   # cache. Set 0 to disable the operation cache. The default is 100mb.
   def self.cache_set_max_mem size
     vips_cache_set_max_mem size
+    cache_max_mem
   end
 
   # Set the maximum number of files libvips should keep open in the
@@ -661,12 +712,43 @@ module Vips
   # 100.
   def self.cache_set_max_files size
     vips_cache_set_max_files size
+    cache_max_files
   end
 
-  # Set the size of the libvips worker pool. This defaults to the number of
-  # hardware threads on your computer. Set to 1 to disable threading.
+  # Print the libvips operation cache to stdout. Handy for debugging.
+  def self.cache_print # :nodoc:
+    vips_cache_print
+  end
+
+  # Drop the libvips operation cache. Handy for leak tracking.
+  def self.cache_drop_all # :nodoc:
+    vips_cache_drop_all
+  end
+
+  # Get the size of libvips worker pools. Defaults to the VIPS_CONCURRENCY env
+  # var or the number of hardware threads on your computer.
+  def self.concurrency
+    vips_concurrency_get
+  end
+
+  # Get the default size of libvips worker pools.
+  def self.concurrency_default
+    DEFAULT_CONCURRENCY
+  end
+
+  # Set the size of each libvips worker pool. Max 1024 threads. Set to 1 to
+  # disable threading. Set to 0 or nil to reset to default.
   def self.concurrency_set n
+    n = DEFAULT_CONCURRENCY if n.to_i == 0
     vips_concurrency_set n
+    concurrency
+  end
+
+  # Whether SIMD and the run-time compiler are enabled. This can give a nice
+  # speed-up, but can also be unstable on some systems or with some versions
+  # of the run-time compiler.
+  def self.vector?
+    vips_vector_isenabled == 1
   end
 
   # Enable or disable SIMD and the run-time compiler. This can give a nice
@@ -674,6 +756,7 @@ module Vips
   # of the run-time compiler.
   def self.vector_set enabled
     vips_vector_set_enabled(enabled ? 1 : 0)
+    vector?
   end
 
   # Deprecated compatibility function.
