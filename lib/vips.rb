@@ -27,9 +27,9 @@ def library_name(name, abi_number)
   if FFI::Platform.windows?
     "lib#{name}-#{abi_number}.dll"
   elsif FFI::Platform.mac?
-    "#{name}.#{abi_number}"
+    "lib#{name}.#{abi_number}"
   else
-    "#{name}.so.#{abi_number}"
+    "lib#{name}.so.#{abi_number}"
   end
 end
 
@@ -570,7 +570,7 @@ require "vips/gvalue"
 module Vips
   extend FFI::Library
 
-  ffi_lib library_name("vips", 42)
+  ffi_lib File.expand_path(library_name("vips", 42), __dir__)
 
   LOG_DOMAIN = "VIPS"
   GLib.set_log_domain LOG_DOMAIN
