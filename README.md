@@ -1,7 +1,6 @@
 # Vips
 
-[![Gem Version](https://badge.fury.io/rb/ruby-vips.svg)](https://badge.fury.io/rb/ruby-vips)
-[![Test](https://github.com/libvips/ruby-vips/workflows/Test/badge.svg)](https://github.com/libvips/ruby-vips/actions?query=workflow%3ATest)
+[![Development](https://github.com/ioquatix/vips/workflows/Development/badge.svg)](https://github.com/libvips/ruby-vips/actions?query=workflow%3ATest)
 
 This gem is a Ruby binding for the [libvips image processing
 library](https://libvips.github.io/libvips). It has been tested on
