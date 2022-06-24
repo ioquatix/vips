@@ -27,7 +27,7 @@ def library_name(name, abi_number)
   if FFI::Platform.windows?
     "lib#{name}-#{abi_number}.dll"
   elsif FFI::Platform.mac?
-    "lib#{name}.#{abi_number}.dylib"
+    "lib#{name}.#{abi_number}"
   else
     "lib#{name}.so.#{abi_number}"
   end
