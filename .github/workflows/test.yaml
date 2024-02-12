@@ -1,4 +1,4 @@
-name: Development
+name: Test
 
 on: [push, pull_request]
 
@@ -47,7 +47,6 @@ jobs:
       run: |
         sudo apt-get update -qq -o Acquire::Retries=3
         sudo apt-get install --fix-missing -qq -o Acquire::Retries=3 libvips
-        bundle exec rake ext
     
     - name: Run tests
       timeout-minutes: 5
