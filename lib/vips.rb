@@ -570,7 +570,7 @@ require "vips/gvalue"
 module Vips
   extend FFI::Library
 
-  ffi_lib File.expand_path(library_name("vips", 42), __dir__)
+  ffi_lib library_name("vips", 42)
 
   LOG_DOMAIN = "VIPS"
   GLib.set_log_domain LOG_DOMAIN
