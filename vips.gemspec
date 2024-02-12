@@ -5,7 +5,6 @@ Gem::Specification.new do |spec|
 	spec.name          = "vips"
 	spec.version       = Vips::VERSION
 	spec.authors       = ["John Cupitt", "Samuel Williams"]
-	spec.email         = ["jcupitt@gmail.com", "samuel.williams@oriontransfer.co.nz"]
 
 	spec.summary       = "Vips is a high-performance image manipulation library."
 	spec.description   = "Provides pre-compiled binaries for libvips."
@@ -20,7 +19,7 @@ Gem::Specification.new do |spec|
 	
 	spec.required_ruby_version = ">= 2.1"
 
-	spec.extensions = %w[ext/Rakefile]
+	# spec.extensions = %w[ext/Rakefile]
 
 	spec.add_runtime_dependency "ffi", ["~> 1.12"]
 
@@ -28,8 +27,4 @@ Gem::Specification.new do |spec|
 	spec.add_development_dependency "rspec", ["~> 3.3"]
 	spec.add_development_dependency "yard", ["~> 0.9.11"]
 	spec.add_development_dependency "bundler", [">= 1.0", "< 3"]
-
-	if Gem.ruby_version >= Gem::Version.new("2.2")
-		spec.add_development_dependency "standard"
-	end
 end
